@@ -220,7 +220,7 @@ audit_logs_db: Dict[str, dict] = {}
 access_tokens: Dict[str, dict] = {}
 refresh_tokens: Dict[str, dict] = {}
 
-ACCESS_TOKEN_TTL = timedelta(minutes=30)
+ACCESS_TOKEN_TTL = timedelta(days=2)
 REFRESH_TOKEN_TTL = timedelta(days=7)
 
 
@@ -566,7 +566,10 @@ def login(payload: LoginRequest):
     record_audit(user["id"], "LOGIN", "user", user["id"])
     return ok({
         "accessToken": access_token,
+        "accessTokenExpiresAt": access_tokens[access_token]["expires_at"].isoformat(),
+        "expiresIn": int(ACCESS_TOKEN_TTL.total_seconds()),
         "refreshToken": refresh_token,
+        "refreshTokenExpiresAt": refresh_tokens[refresh_token]["expires_at"].isoformat(),
         "user": public_user(user),
     })
 
@@ -580,11 +583,16 @@ def refresh(payload: RefreshRequest):
     if not user or user["status"] != UserStatus.ACTIVE:
         raise AppError("UNAUTHORIZED", "User not found or disabled", 401)
     access_token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + ACCESS_TOKEN_TTL
     access_tokens[access_token] = {
         "user_id": user["id"],
-        "expires_at": datetime.now(timezone.utc) + ACCESS_TOKEN_TTL,
+        "expires_at": expires_at,
     }
-    return ok({"accessToken": access_token})
+    return ok({
+        "accessToken": access_token,
+        "accessTokenExpiresAt": expires_at.isoformat(),
+        "expiresIn": int(ACCESS_TOKEN_TTL.total_seconds()),
+    })
 
 
 @app.post("/api/v1/auth/logout")
@@ -596,8 +604,10 @@ def logout(authorization: Optional[str] = Header(None), user: dict = Depends(get
 
 
 @app.get("/api/v1/auth/me")
-def me(user: dict = Depends(get_current_user)):
-    return ok(public_user(user))
+def me(authorization: Optional[str] = Header(None), user: dict = Depends(get_current_user)):
+    token = authorization.split(" ", 1)[1]
+    expires_at = access_tokens[token]["expires_at"]
+    return ok({**public_user(user), "accessTokenExpiresAt": expires_at.isoformat()})
 
 
 def public_user(user: dict) -> dict:
