@@ -1123,24 +1123,30 @@ def seed() -> None:
         "updated_at": now_iso(),
     }
 
-    partner_names = ["ABC Travel", "ABC Food", "ABC Hotel"]
+    partner_seed = [
+        {"name": "Swiggy", "domain": "swiggy.com", "launch_url": "https://www.swiggy.com/"},
+        {"name": "BigBasket", "domain": "bigbasket.com", "launch_url": "https://www.bigbasket.com"},
+        {"name": "Domino's", "domain": "dominos.co.in", "launch_url": "https://www.dominos.co.in"},
+    ]
+    partner_names = [p["name"] for p in partner_seed]
     partner_ids = {}
-    for name in partner_names:
+    for p in partner_seed:
         pid = new_id()
-        partner_ids[name] = pid
+        partner_ids[p["name"]] = pid
         partners_db[pid] = {
             "id": pid,
-            "name": name,
-            "description": f"{name} partner",
-            "logo_url": f"https://example.com/{name.lower().replace(' ', '-')}.png",
-            "website_url": "https://example.com",
+            "name": p["name"],
+            "description": f"{p['name']} partner",
+            "logo_url": favicon(p["domain"]),
+            "website_url": p["launch_url"],
             "status": PartnerStatus.ACTIVE,
             "created_at": now_iso(),
             "updated_at": now_iso(),
         }
 
     app_ids = {}
-    for name in partner_names:
+    for p in partner_seed:
+        name = p["name"]
         aid = new_id()
         app_ids[name] = aid
         partner_apps_db[aid] = {
@@ -1150,7 +1156,7 @@ def seed() -> None:
             "description": f"{name} web integration",
             "integration_type": IntegrationType.WEB,
             "version": "1.0.0",
-            "launch_url": f"https://{name.lower().replace(' ', '')}.example.com",
+            "launch_url": p["launch_url"],
             "deep_link": None,
             "configuration": {},
             "status": PartnerAppStatus.ACTIVE,
@@ -1161,9 +1167,9 @@ def seed() -> None:
     client_a_id = new_id()
     clients_db[client_a_id] = {
         "id": client_a_id,
-        "name": "Client A",
-        "code": "CLIENT_A",
-        "description": "Seed client A",
+        "name": "LLA",
+        "code": "LLA",
+        "description": "Seed client LLA",
         "status": ClientStatus.ACTIVE,
         "api_key": secrets.token_urlsafe(24),
         "created_at": now_iso(),
@@ -1172,9 +1178,9 @@ def seed() -> None:
     client_b_id = new_id()
     clients_db[client_b_id] = {
         "id": client_b_id,
-        "name": "Client B",
-        "code": "CLIENT_B",
-        "description": "Seed client B",
+        "name": "Zap",
+        "code": "ZAP",
+        "description": "Seed client Zap",
         "status": ClientStatus.ACTIVE,
         "api_key": secrets.token_urlsafe(24),
         "created_at": now_iso(),
